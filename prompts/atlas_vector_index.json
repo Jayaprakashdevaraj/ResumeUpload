@@ -1,0 +1,13 @@
+{
+  "name": "vector_index",
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "embedding": { "type": "knnVector", "dimensions": 1024 },
+      "text": { "type": "string" },
+      "skills": { "type": "string" },
+      "role": { "type": "string" }
+    }
+  },
+  "notes": "Import this as an Atlas Vector Search index named 'vector_index'. The 'embedding' field should be stored as a vector in each document. Adjust dimensions as needed."
+}
