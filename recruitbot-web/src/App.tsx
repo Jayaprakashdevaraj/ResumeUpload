@@ -1,14 +1,22 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import IngestionPage from './features/ingestion/pages/IngestionPage';
+import ChatPage from './pages/ChatPage';
 import { ToastProvider } from './lib/toast';
 
 export default function App() {
   return (
     <ToastProvider>
-      <div>
-        <h1 style={{ fontFamily: 'Arial, sans-serif', margin: 16 }}>RecruitBot — Phase 1 (Ingestion Scaffold)</h1>
-        <IngestionPage />
-      </div>
+      <BrowserRouter>
+        <nav style={{ padding: 12, background: '#071024' }}>
+          <Link to="/" style={{ color: '#9fb4ff', marginRight: 12 }}>Ingestion</Link>
+          <Link to="/chat" style={{ color: '#9fb4ff' }}>Chat/Search</Link>
+        </nav>
+        <Routes>
+          <Route path="/" element={<IngestionPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+        </Routes>
+      </BrowserRouter>
     </ToastProvider>
   );
 }

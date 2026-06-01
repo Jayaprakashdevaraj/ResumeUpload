@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
+import { API_BASE, API_TIMEOUT } from '../../../config/api.config';
 
-const client: AxiosInstance = axios.create({ baseURL: '/', timeout: 30000 });
+const client: AxiosInstance = axios.create({ baseURL: API_BASE, timeout: API_TIMEOUT });
 
 // basic response interceptor to return data or throw normalized error
 client.interceptors.response.use(
