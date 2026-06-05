@@ -39,11 +39,23 @@ export function ChatInputBar({ onSubmit }: { onSubmit?: (q: string) => void }) {
       <textarea
         ref={textareaRef}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          setValue(e.target.value);
+          // autosize
+          const ta = textareaRef.current;
+          if (ta) {
+            ta.style.height = 'auto';
+            const max = 144; // px (~6 lines)
+            const newH = Math.min(ta.scrollHeight, max);
+            ta.style.height = `${newH}px`;
+            ta.style.overflowY = ta.scrollHeight > max ? 'auto' : 'hidden';
+          }
+        }}
         onKeyDown={onKeyDown}
         rows={1}
         placeholder="Type your query... Press Enter to search"
         className="flex-1 bg-bg-card text-text-primary p-2 rounded resize-none"
+        style={{ maxHeight: 144, overflowY: 'auto' }}
       />
       <button onClick={() => submit()} className="px-3 py-2 bg-gradient-to-r from-primary to-accent text-white rounded">
         Send

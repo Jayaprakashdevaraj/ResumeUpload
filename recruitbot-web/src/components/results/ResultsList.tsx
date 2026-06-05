@@ -17,10 +17,14 @@ export function ResultsList({ results, searchType, duration, query }: { results:
 
   return (
     <div>
+      {/* aria-live announcement for screen readers */}
+      <div aria-live="polite" style={{position: 'absolute', left: -10000, top: 'auto', width: 1, height: 1, overflow: 'hidden'}}>
+        Found {results.length} candidates for "{query || ''}"
+      </div>
       <ResultSummary count={results.length} searchType={searchType} duration={duration} />
       <div className="flex flex-col gap-3">
         {results.map((r, i) => (
-          <ResultCard key={r.candidateId} result={r} rank={i + 1} onSelect={handleSelect} />
+          <ResultCard key={r.candidateId} result={r} rank={i + 1} onSelect={handleSelect} searchType={searchType} />
         ))}
       </div>
     </div>
