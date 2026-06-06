@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input, Textarea, Card, Badge } from '../ui';
+import { Button, Input, Textarea, Card, Badge, Icon, Avatar, Modal, Tooltip } from '../ui';
 
 export default function StyleGuide() {
   return (
@@ -46,6 +46,32 @@ export default function StyleGuide() {
           </div>
         </div>
       </section>
+
+      <section className="mb-6">
+        <h2 className="text-lg font-medium">Icons & Avatars</h2>
+        <div className="mt-3 flex items-center gap-3">
+          <Icon />
+          <Avatar initials="JD" />
+          <Tooltip content="Avatar tooltip"><Avatar initials="AB" /></Tooltip>
+        </div>
+      </section>
+
+      <section className="mb-6">
+        <h2 className="text-lg font-medium">Modal (example)</h2>
+        <ModalExample />
+      </section>
+    </div>
+  );
+}
+
+function ModalExample() {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div>
+      <Button onClick={() => setOpen(true)}>Open Modal</Button>
+      <Modal open={open} onClose={() => setOpen(false)} title="Example modal">
+        <p>This is a modal implemented with the Modal primitive.</p>
+      </Modal>
     </div>
   );
 }
