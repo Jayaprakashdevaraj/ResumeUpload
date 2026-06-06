@@ -65,7 +65,8 @@ export class SearchService {
           snippet = d.text ? String(d.text).slice(0, 500) : '';
         }
 
-        const metadata = { name: d.name, role: d.role, skills: d.skills, score: d.score };
+        const highlights = Array.isArray(d.highlights) ? d.highlights : [];
+        const metadata = { name: d.name, role: d.role, skills: d.skills, score: d.score, bm25Score: d.score, highlights, matchedTerms: extractMatchedTerms(query, snippet) };
         return { resumeId: String(d._id), snippet, metadata };
       });
 
@@ -117,7 +118,7 @@ export class SearchService {
 
       const candidates: Candidate[] = docs.map((d: any) => {
         const snippet = d.text ? String(d.text).slice(0, 500) : '';
-        const metadata = { name: d.name, role: d.role, skills: d.skills, score: d.score };
+        const metadata = { name: d.name, role: d.role, skills: d.skills, score: d.score, vectorScore: d.score, matchedTerms: extractMatchedTerms(query, snippet) };
         return { resumeId: String(d._id), snippet, metadata };
       });
 
@@ -148,7 +149,7 @@ export class SearchService {
         const candidates: Candidate[] = scores.map((s: any) => ({
           resumeId: String(s.doc._id),
           snippet: s.doc.text ? String(s.doc.text).slice(0, 500) : '',
-          metadata: { name: s.doc.name, role: s.doc.role, skills: s.doc.skills, score: s.score }
+          metadata: { name: s.doc.name, role: s.doc.role, skills: s.doc.skills, score: s.score, vectorScore: s.score, matchedTerms: extractMatchedTerms(query, s.doc.text ? String(s.doc.text).slice(0, 500) : '') }
         }));
 
         return candidates;
@@ -173,12 +174,18 @@ export class SearchService {
     // Attach snippet/metadata to reranked results so callers can summarize if needed
     const mergedResults = reranked.map((r) => {
       const c = candidates.find((x) => x.resumeId === r.resumeId);
+      const snippet = c?.snippet || '';
+      const metadata = c?.metadata || {};
+      const matchedTerms = (metadata && Array.isArray(metadata.matchedTerms) && metadata.matchedTerms.length > 0) ? metadata.matchedTerms : extractMatchedTerms(query, snippet);
+      const contributions: any = { bm25: metadata?.bm25Score, vector: metadata?.vectorScore };
       return {
         resumeId: String(r.resumeId),
         score: Number(r.score),
         rationale: String(r.rationale),
-        snippet: c?.snippet || '',
-        metadata: c?.metadata || {}
+        snippet,
+        metadata,
+        matchedTerms,
+        contributions
       };
     });
 
@@ -199,4 +206,17 @@ function cosineSimilarity(a: number[], b: number[]) {
   }
   if (na === 0 || nb === 0) return 0;
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+function extractMatchedTerms(query: string, text: string) {
+  try {
+    if (!query || !text) return [];
+    const qTokens = String(query || '').toLowerCase().split(/\W+/).filter(Boolean);
+    const tTokens = String(text || '').toLowerCase().split(/\W+/).filter(Boolean);
+    const qSet = new Set(qTokens);
+    const matched = Array.from(new Set(tTokens.filter((t) => qSet.has(t))));
+    return matched.slice(0, 12);
+  } catch (e) {
+    return [];
+  }
 }

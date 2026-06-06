@@ -3,6 +3,7 @@ import SearchBar from '../components/SearchBar';
 import { SearchModeNav } from '../../sidebar/SearchModeNav';
 import HybridWeightPanel from '../../sidebar/HybridWeightPanel';
 import ResultsList from '../../../components/results/ResultsList';
+import ResultsToolbar from '../components/ResultsToolbar';
 import { useSearchStore } from '../../../lib/stores/search.store';
 import RerankPanel from '../components/RerankPanel';
 import ChatPanel from '../../chat/components/ChatPanel';
@@ -12,6 +13,9 @@ export default function SearchPage() {
   const searchType = useSearchStore((s) => s.searchType);
   const isSearching = useSearchStore((s) => s.isSearching);
   const lastQuery = useSearchStore((s) => s.lastQuery);
+  const [filtered, setFiltered] = React.useState(results);
+
+  React.useEffect(() => setFiltered(results), [results]);
 
   return (
     <div className="p-6 grid grid-cols-4 gap-6">
@@ -35,9 +39,12 @@ export default function SearchPage() {
       <main className="col-span-3">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm text-text-muted">{isSearching ? 'Searching...' : `Results for "${lastQuery || ''}"`}</div>
-          <RerankPanel />
+          <div className="flex items-center gap-4">
+            <ResultsToolbar results={results} onChange={(r) => setFiltered(r)} />
+            <RerankPanel />
+          </div>
         </div>
-        <ResultsList results={results} searchType={searchType} duration={0} query={lastQuery} />
+        <ResultsList results={filtered} searchType={searchType} duration={0} query={lastQuery} />
       </main>
     </div>
   );

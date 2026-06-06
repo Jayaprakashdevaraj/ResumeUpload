@@ -16,6 +16,9 @@ export interface SearchResult {
   score: number;
   experienceYears?: number;
   content: string;
+  snippet?: string;
+  matchedTerms?: string[];
+  contributions?: { bm25?: number; vector?: number };
   rationale?: string;
   rationalePersisted?: boolean;
 }
