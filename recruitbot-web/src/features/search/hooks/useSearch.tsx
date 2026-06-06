@@ -15,7 +15,11 @@ export function useSearch() {
     }
     setSearching(true);
     try {
-      const resp = await searchApi.search({ query, topK: state.topK, searchType: state.searchType });
+      // Use the backward-compatible alias so behavior matches the chat flow (maps 'keyword' <-> 'bm25')
+      const apiType = state.searchType === 'bm25' ? 'keyword' : (state.searchType as any);
+      console.debug('[useSearch] query=', query, 'searchType=', state.searchType, 'apiType=', apiType, 'topK=', state.topK);
+      const resp = await (searchApi as any).searchResumes({ query: query.trim(), topK: state.topK, searchType: apiType });
+      // `searchResumes` returns the normalized SearchResponse shape
       setResults(resp.results || [], query);
     } catch (err: any) {
       console.error('useSearch.search error:', err?.message || err);

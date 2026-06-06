@@ -1,5 +1,6 @@
 import React from 'react';
 import { Experience } from '../../types/candidate.types';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 export function ExperienceSection({ experience }: { experience?: Experience[] }) {
   if (!experience || experience.length === 0) return null;
@@ -11,7 +12,9 @@ export function ExperienceSection({ experience }: { experience?: Experience[] })
           <li key={idx} className="">
             <div className="text-sm font-semibold">{exp.title} <span className="text-xs text-text-muted">@ {exp.company}</span></div>
             {exp.duration && <div className="text-xs text-text-muted">{exp.duration}</div>}
-            {exp.description && <div className="text-sm text-text-primary mt-1">{exp.description}</div>}
+            {exp.description && (
+              <div className="text-sm text-text-primary mt-1" dangerouslySetInnerHTML={{ __html: sanitizeHtml(exp.description) }} />
+            )}
           </li>
         ))}
       </ol>
