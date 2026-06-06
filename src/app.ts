@@ -6,6 +6,7 @@ import healthRouter from './routes/health';
 import embeddingsRouter from './routes/embeddings';
 import searchRouter from './routes/search';
 import ingestionRouter from './routes/ingestionRoutes';
+import chatRouter from './routes/chat';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/v1/health', healthRouter);
 app.use('/v1/embeddings', embeddingsRouter);
 app.use('/v1/search', searchRouter);
 app.use('/v1/resume', ingestionRouter);
+app.use('/v1/chat', chatRouter);
 
 // generic error handler
 app.use((err: any, req: any, res: any, next: any) => {
