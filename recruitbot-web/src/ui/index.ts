@@ -3,3 +3,8 @@ export { Input } from './primitives/Input';
 export { Card } from './primitives/Card';
 export { Textarea } from './primitives/Textarea';
 export { Badge } from './primitives/Badge';
+export { Icon } from './primitives/Icon';
+export { Avatar } from './primitives/Avatar';
+export { Dropdown } from './primitives/Dropdown';
+export { Modal } from './primitives/Modal';
+export { Tooltip } from './primitives/Tooltip';
