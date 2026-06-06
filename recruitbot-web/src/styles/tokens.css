@@ -1,0 +1,19 @@
+:root {
+  --color-primary: #6366f1;
+  --color-accent: #ec4899;
+  --bg-base: #0f0f13;
+  --bg-surface: #18181f;
+  --bg-card: #1e1e28;
+  --text-primary: #f1f1f5;
+  --text-muted: #8b8ba0;
+  --radius-md: 8px;
+}
+
+.dark {
+  --bg-base: #060708;
+}
+
+/* Utility mapping for use without Tailwind classes (optional) */
+.bg-primary { background-color: var(--color-primary); }
+.text-primary { color: var(--text-primary); }
+.bg-card { background-color: var(--bg-card); }

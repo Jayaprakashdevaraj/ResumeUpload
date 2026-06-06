@@ -6,7 +6,9 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   appName: process.env.APP_NAME || 'resume-ai-rag',
   appVersion: process.env.APP_VERSION || '0.1.0',
-  port: process.env.PORT ? Number(process.env.PORT) : 3000,
+  // Port configuration
+  // Previous default: 3000 (kept as a comment for historical reference)
+  port: process.env.PORT ? Number(process.env.PORT) : 3001,
   logLevel: process.env.LOG_LEVEL || 'info',
 
   // Request/Response

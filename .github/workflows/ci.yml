@@ -2,6 +2,35 @@ name: CI
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: |
+          cd recruitbot-web
+          npm ci
+      - name: Lint
+        run: |
+          cd recruitbot-web
+          npm run lint
+      - name: Run tests
+        run: |
+          cd recruitbot-web
+          npm run test --if-present
+name: CI
+
+on:
+  push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
