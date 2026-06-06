@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useSearchStore } from '../lib/stores/search.store';
 import { useChatStore } from '../lib/stores/chat.store';
 import searchApi from '../lib/api/search.api';
+import queryClient from '../lib/queryClient';
 
 export function useSearch() {
   const { searchType, bm25Weight, vectorWeight, topK, setSearching, setResults } = useSearchStore();
@@ -12,13 +13,14 @@ export function useSearch() {
     setSearching(true);
     try {
       const apiType = searchType === 'bm25' ? 'keyword' : searchType;
-      const data = await searchApi.searchResumes({
+      const key = ['search', query.trim(), apiType, topK];
+      const data = await queryClient.fetchQuery(key, () => (searchApi as any).searchResumes({
         query: query.trim(),
         searchType: apiType as any,
         topK,
         bm25Weight: bm25Weight / 100,
         vectorWeight: vectorWeight / 100,
-      });
+      }));
 
       setResults(data.results || [], data.query || query);
       addBotMessage(<div></div>);
