@@ -21,7 +21,10 @@ export const searchApi = {
       phoneNumber: (r.metadata && r.metadata.phone) || r.phone || '',
       score: Number(r.score || 0),
       experienceYears: (r.metadata && r.metadata.experienceYears) || r.experienceYears || 0,
-      content: r.snippet || r.content || r.text || ''
+      content: r.snippet || r.content || r.text || '',
+      snippet: r.snippet || r.content || r.text || '',
+      matchedTerms: r.matchedTerms || (r.metadata && r.metadata.matchedTerms) || [],
+      contributions: r.contributions || { bm25: (r.metadata && r.metadata.bm25Score) || undefined, vector: (r.metadata && r.metadata.vectorScore) || undefined }
     }));
 
     const out: SearchResponse = {
@@ -55,6 +58,9 @@ export const searchApi = {
       score: Number(r.score || 0),
       experienceYears: (r.metadata && r.metadata.experienceYears) || r.experienceYears || 0,
       content: r.snippet || r.content || r.text || '',
+      snippet: r.snippet || r.content || r.text || '',
+      matchedTerms: r.matchedTerms || (r.metadata && r.metadata.matchedTerms) || [],
+      contributions: r.contributions || { bm25: (r.metadata && r.metadata.bm25Score) || undefined, vector: (r.metadata && r.metadata.vectorScore) || undefined },
       rationale: r.rationale || ''
     }));
   }
