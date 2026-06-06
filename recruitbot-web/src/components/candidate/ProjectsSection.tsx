@@ -1,4 +1,5 @@
 import React from 'react';
+import { sanitizeHtml } from '../../lib/sanitize';
 
 export function ProjectsSection({ projects }: { projects?: { title: string; description?: string }[] }) {
   if (!projects || projects.length === 0) return null;
@@ -9,7 +10,9 @@ export function ProjectsSection({ projects }: { projects?: { title: string; desc
         {projects.map((p, i) => (
           <div key={i}>
             <div className="text-sm font-medium">{p.title}</div>
-            {p.description && <div className="text-sm text-text-primary">{p.description}</div>}
+            {p.description && (
+              <div className="text-sm text-text-primary" dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.description) }} />
+            )}
           </div>
         ))}
       </div>
