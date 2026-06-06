@@ -53,6 +53,21 @@ export function ResultCard({
             {result.contributions?.vector !== undefined && (
               <div className="text-xs px-2 py-1 rounded bg-score-vector/10 text-score-vector">Vector: {Number(result.contributions.vector).toFixed(2)}</div>
             )}
+            {result.contributions && (result.contributions.bm25 !== undefined || result.contributions.vector !== undefined) && (
+              <div className="flex-1 ml-2">
+                <div className="h-2 w-full bg-white/5 rounded overflow-hidden">
+                  {/* Contribution bar: bm25 then vector */}
+                  <div
+                    className="h-2 bg-score-bm25"
+                    style={{ width: `${Number(result.contributions.bm25 ?? 0) * 100}%`, display: 'inline-block' }}
+                  />
+                  <div
+                    className="h-2 bg-score-vector"
+                    style={{ width: `${Number(result.contributions.vector ?? 0) * 100}%`, display: 'inline-block' }}
+                  />
+                </div>
+              </div>
+            )}
             {matched.length > 0 && (
               <div className="text-xs text-text-muted">Matched: {matched.slice(0,5).map((t,i) => <span key={t} className="px-1">{t}{i < Math.min(matched.length,5)-1 ? ',' : ''}</span>)}</div>
             )}
