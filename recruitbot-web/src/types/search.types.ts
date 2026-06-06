@@ -16,6 +16,8 @@ export interface SearchResult {
   score: number;
   experienceYears?: number;
   content: string;
+  rationale?: string;
+  rationalePersisted?: boolean;
 }
 
 export interface SearchResponse {

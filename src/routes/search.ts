@@ -3,6 +3,7 @@ import { z } from 'zod';
 import config from '../config';
 import { SearchService } from '../services/SearchService';
 import { LLMService } from '../services/LLMService';
+import { connectToMongo } from '../lib/mongo';
 
 const router = Router();
 
@@ -110,6 +111,18 @@ router.post('/rerank', async (req: Request, res: Response) => {
     const results = await llmSvc.rerankCandidates(parsed.query, parsed.candidates as any, topK);
     const rerankMs = Date.now() - start;
     (res.locals as any).componentTimings = { ...(res.locals as any).componentTimings, rerankMs };
+    // persist rerank metadata for observability / caching
+    (async () => {
+      try {
+        const client = await connectToMongo();
+        const col = client.db(config.mongodbDbName).collection('rerank_results');
+        const docs = results.map((r: any) => ({ query: parsed.query, resumeId: r.resumeId, score: r.score, rationale: r.rationale, createdAt: new Date() }));
+        if (docs.length) await col.insertMany(docs);
+      } catch (e) {
+        console.error('persisting rerank metadata failed:', (e as any)?.message || e);
+      }
+    })();
+
     res.json({ results });
   } catch (err: any) {
     if (err && err.errors) {
@@ -120,6 +133,65 @@ router.post('/rerank', async (req: Request, res: Response) => {
     const body: any = { error: err?.message || 'Internal Server Error' };
     if (config.nodeEnv !== 'production') body.stack = err?.stack;
     res.status(500).json(body);
+  }
+});
+
+// Streaming rerank: stream per-candidate rationales token-by-token (SSE), then emit final ranked results
+router.post('/rerank/stream', async (req: Request, res: Response) => {
+  try {
+    const parsed = rerankSchema.parse(req.body);
+    const topK = parsed.topK ?? config.searchRerankTopK;
+
+    // SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    // Stream a rationale per candidate
+    for (const c of parsed.candidates) {
+      // notify start
+      res.write(`event: rationale_start\ndata: ${JSON.stringify({ resumeId: c.resumeId })}\n\n`);
+      let finalSummary = '';
+      try {
+        finalSummary = await llmSvc.streamSummarizeCandidateFit(parsed.query, c as any, (chunk: string) => {
+          try {
+            const payload = JSON.stringify({ resumeId: c.resumeId, chunk });
+            res.write(`event: rationale\ndata: ${payload}\n\n`);
+          } catch (e) {}
+        }, { style: 'short', maxTokens: 300 });
+
+        // send candidate done with final summary
+        res.write(`event: rationale_done\ndata: ${JSON.stringify({ resumeId: c.resumeId, summary: finalSummary })}\n\n`);
+      } catch (e: any) {
+        console.error('streamSummarizeCandidateFit failed for', c.resumeId, e?.message || e);
+        res.write(`event: rationale_error\ndata: ${JSON.stringify({ resumeId: c.resumeId, error: 'summary_failed' })}\n\n`);
+      }
+    }
+
+    // After streaming all rationales, compute final ranking with the reranker (non-streaming)
+    const ranked = await llmSvc.rerankCandidates(parsed.query, parsed.candidates as any, topK);
+
+    // persist ranked metadata
+    try {
+      const client = await connectToMongo();
+      const col = client.db(config.mongodbDbName).collection('rerank_results');
+      const docs = ranked.map((r: any) => ({ query: parsed.query, resumeId: r.resumeId, score: r.score, rationale: r.rationale, createdAt: new Date() }));
+      if (docs.length) await col.insertMany(docs);
+    } catch (e) {
+      console.error('persisting rerank metadata failed:', (e as any)?.message || e);
+    }
+
+    // emit final ranked results
+    res.write(`event: ranked\ndata: ${JSON.stringify(ranked)}\n\n`);
+    res.write('event: done\ndata: {}\n\n');
+    res.end();
+  } catch (err: any) {
+    console.error('/v1/search/rerank/stream error:', err);
+    try {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: err?.message || 'Internal' })}\n\n`);
+      res.end();
+    } catch (e) {}
   }
 });
 

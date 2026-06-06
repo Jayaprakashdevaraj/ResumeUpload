@@ -74,6 +74,88 @@ export class LLMService {
     }
   }
 
+  // Streaming call: invoke the provider with streaming enabled and forward token chunks via onToken
+  private async callGroqStream(messages: GroqMessage[], onToken: (chunk: string) => void, maxTokens = 1024) {
+    if (!this.apiKey) throw new Error('No GROQ API key configured');
+    try {
+      const { fetch: nodeFetch } = await import('undici');
+      const response = await nodeFetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({ model: this.model, messages, temperature: 0.2, max_tokens: maxTokens, stream: true })
+      });
+
+      if (!response.ok) throw new Error(`GROQ API error: ${response.status} ${response.statusText}`);
+
+      const body: any = (response as any).body;
+
+      // Prefer async iteration when available (Node stream or web ReadableStream)
+      if (body && typeof body[Symbol.asyncIterator] === 'function') {
+        for await (const chunk of body) {
+          try {
+            const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8');
+            onToken(text);
+          } catch (e) {
+            // ignore chunk decode errors
+          }
+        }
+      } else if (body && typeof body.getReader === 'function') {
+        const reader = body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          onToken(decoder.decode(value));
+        }
+      } else {
+        // fallback: no streaming; return full text as one chunk
+        const txt = await response.text();
+        onToken(txt);
+      }
+    } catch (err: any) {
+      throw new Error(`LLMService.callGroqStream failed: ${err?.message || String(err)}`);
+    }
+  }
+
+  // Stream a concise candidate fit summary token-by-token. Calls `onChunk` for each token/string chunk and
+  // resolves with the final assembled summary string.
+  async streamSummarizeCandidateFit(
+    query: string,
+    candidate: Candidate,
+    onChunk: (chunk: string) => void,
+    options?: { style?: 'short' | 'detailed'; maxTokens?: number }
+  ): Promise<string> {
+    const style = options?.style || 'short';
+    const maxTokens = options?.maxTokens || 300;
+
+    const systemPrompt = `You are a concise summarizer. Given a job query and candidate resume snippet, generate a fit summary. Output plain text (no JSON).`;
+
+    const userPrompt = `Job query: "${query}"
+
+Candidate snippet:
+${(candidate.snippet || '').slice(0, 1000)}
+
+Generate a ${style} summary of how well this candidate fits (max ${maxTokens} tokens).`;
+
+    const messages: GroqMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ];
+
+    let collected = '';
+    await this.callGroqStream(messages, (chunk) => {
+      collected += chunk;
+      try {
+        onChunk(chunk);
+      } catch (e) {}
+    }, maxTokens);
+
+    return collected;
+  }
+
   async rerankCandidates(query: string, candidates: Candidate[], topK = 10): Promise<RerankResult[]> {
     const systemPrompt = `You are a deterministic JSON-only assistant. 
 Given a job search query and candidate resume snippets, rank the candidates by relevance.
