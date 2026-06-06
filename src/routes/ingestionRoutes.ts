@@ -36,6 +36,18 @@ router.post('/embed', ingestionController.embed);
 router.post('/store', ingestionController.store);
 router.post('/inject', singleUpload('file'), ingestionController.injectResume);
 
+router.get('/job/:id', async (req: Request, res: Response) => {
+	try {
+		const { getJobStatus } = await import('../lib/queue');
+		const job = await getJobStatus(req.params.id);
+		if (!job) return res.status(404).json({ error: 'Job not found' });
+		res.json({ ok: true, job });
+	} catch (err: any) {
+		console.error('/v1/resume/job error:', err);
+		res.status(500).json({ error: 'Failed to get job status' });
+	}
+});
+
 router.get('/all', async (req: Request, res: Response) => {
 	try {
 		const client = await connectToMongo();

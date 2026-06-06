@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import { ResumeParserService } from '../services/ResumeParserService';
 import { ResumeingestionService } from '../services/ResumeingestionService';
+import { enqueueIngestionJob } from '../lib/queue';
 import cleanTextUtil from '../utils/textCleaner';
 import AlgorithmResumeParser from '../services/AlgorithmResumeParser';
 import { LLMResumeParser } from '../services/LLMResumeParser';
@@ -187,14 +188,18 @@ export default {
       if (file) payload.file = file;
       if (body.path) payload.path = body.path;
       if (body.fileName) payload.fileName = body.fileName;
+      // Enqueue the ingest job. In development mode this may be processed in-process
+      const enq = await enqueueIngestionJob(payload);
+      if (enq.processed) {
+        const result = enq.result;
+        (res.locals as any).componentTimings = result?.timings || {};
+        (res.locals as any).fileName = result?.doc?.fileName || payload.file?.originalname || payload.fileName || null;
+        res.json({ ok: true, ...result });
+        return;
+      }
 
-      const { ResumeingestionService } = await import('../services/ResumeingestionService');
-      const svc = new ResumeingestionService();
-      const result = await svc.injectResume(payload);
-      // expose timings for logger middleware
-      (res.locals as any).componentTimings = result?.timings || {};
-      (res.locals as any).fileName = result?.doc?.fileName || payload.file?.originalname || payload.fileName || null;
-      res.json({ ok: true, ...result });
+      // job queued for background processing
+      res.json({ ok: true, queued: true, jobId: enq.jobId });
     } catch (err: any) {
       console.error('/v1/resume/inject error:', err);
       if (err instanceof IngestionError) return res.status(err.status).json({ error: err.message, code: err.code });
